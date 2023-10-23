@@ -1,0 +1,17 @@
+MCU: ESP32C3 or ESP32S3. S3 might be able to expose its flash as a mountable partition so configs can be written to it, but if that fails to pan out might fall back to the c3 and work with a configuration protocol to allow the mesh network of devices to configure each other
+
+Temp/Humidity/Pressure: BM280
+CO2: 
+VOCs:
+Particulate Matter: // PM2.5 is mandatory, but a device that can output 1, 2.5, 4, and 10 would be nice. Fan models increase power draw and maintenance needs, so PM2.5 only might be needed for a satrting point?
+Dust Sensor:
+NOx:
+SO2:
+
+Display: Waveshare eink B/W display. Colored ones require too much time to refesh the display, going from 2 seconds to up to over 30 per redraw. Might need to power test against a small and traditional LED display if my refresh rate is around once every 10-15 seconds... Goal is lowest power draw after all.
+
+Screen size unknown, and likely variable depending on device config. Will have to work from the largest option first, then code for smaller ones if desired.
+
+Battery: Some sort of Li-ion, but capacity is unknown and will require testing with different device configs and measurement settings
+
+User Configuration: Either USB mountable flash or an SD card or something, but some way for a user to provide a txt file that can be parsed for startup data. Maybe even a built in HTTP server that allows for configuration somehow... Seems difficult to secure though?

@@ -21,6 +21,8 @@ embassy-lora = { git = "https://github.com/embassy-rs/embassy" }
 
 
 [dependencies]
+bmp390 = { path = "../bmp390" }
+
 embassy-embedded-hal = { version = "0.1.0", features = ["defmt"] }
 embassy-sync = { version = "0.3.0", features = ["defmt"] }
 embassy-executor = { version = "0.3.0", features = ["nightly", "arch-cortex-m", "executor-thread", "executor-interrupt", "defmt", "integrated-timers"] }

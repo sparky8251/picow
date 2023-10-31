@@ -7,15 +7,16 @@
 #![feature(type_alias_impl_trait)]
 
 use bmp390::i2c::BMP390;
+use bmp390::{PowerConfig, PowerMode};
 use cyw43_pio::PioSpi;
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_rp::bind_interrupts;
-use embassy_rp::i2c::{self, Config};
 use embassy_rp::gpio::{Level, Output};
+use embassy_rp::i2c::{self, Config};
 use embassy_rp::peripherals::{DMA_CH0, PIN_23, PIN_25, PIO0};
 use embassy_rp::pio::{InterruptHandler, Pio};
-use embassy_time::{Duration, Timer, Delay};
+use embassy_time::{Delay, Duration, Timer};
 use static_cell::make_static;
 
 use {defmt_rtt as _, panic_probe as _};
@@ -26,7 +27,11 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::task]
 async fn wifi_task(
-    runner: cyw43::Runner<'static, Output<'static, PIN_23>, PioSpi<'static, PIN_25, PIO0, 0, DMA_CH0>>,
+    runner: cyw43::Runner<
+        'static,
+        Output<'static, PIN_23>,
+        PioSpi<'static, PIN_25, PIO0, 0, DMA_CH0>,
+    >,
 ) -> ! {
     runner.run().await
 }
@@ -40,7 +45,15 @@ async fn main(spawner: Spawner) {
     let pwr = Output::new(p.PIN_23, Level::Low);
     let cs = Output::new(p.PIN_25, Level::High);
     let mut pio = Pio::new(p.PIO0, Irqs);
-    let spi = PioSpi::new(&mut pio.common, pio.sm0, pio.irq0, cs, p.PIN_24, p.PIN_29, p.DMA_CH0);
+    let spi = PioSpi::new(
+        &mut pio.common,
+        pio.sm0,
+        pio.irq0,
+        cs,
+        p.PIN_24,
+        p.PIN_29,
+        p.DMA_CH0,
+    );
 
     let sda = p.PIN_14;
     let scl = p.PIN_15;
@@ -55,17 +68,22 @@ async fn main(spawner: Spawner) {
         .set_power_management(cyw43::PowerManagementMode::PowerSave)
         .await;
 
-    let delay = Duration::from_millis(500);
-    Timer::after(delay).await;
-
     let mut bmp390 = BMP390::new_primary(i2c_bus);
-    bmp390.init(&mut Delay).unwrap();
+    bmp390.init(&mut Delay, None).unwrap();
 
+    let delay = Duration::from_secs(25);
     loop {
         control.gpio_set(0, true).await;
+        bmp390.set_power_config(&PowerConfig {
+            pressure_enable: true,
+            temperature_enable: false,
+            power_mode: PowerMode::Forced
+        }).unwrap();
         Timer::after(delay).await;
 
         control.gpio_set(0, false).await;
+        let measurement = bmp390.take_measurement().unwrap();
+        println!("Temp {}, Press {}", measurement.temp, measurement.press);
         Timer::after(delay).await;
     }
 }

@@ -13,5 +13,5 @@ rustflags = [
     "-C", "no-vectorize-loops",
 ]
 
-[env]
-DEFMT_LOG = "info"
+#[env]
+#DEFMT_LOG = "info"

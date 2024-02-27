@@ -14,7 +14,7 @@ use embassy_executor::Spawner;
 use embassy_rp::bind_interrupts;
 use embassy_rp::gpio::{Level, Output};
 use embassy_rp::i2c::{self, Config};
-use embassy_rp::peripherals::{DMA_CH0, PIN_23, PIN_25, PIO0};
+use embassy_rp::peripherals::{DMA_CH0, PIO0};
 use embassy_rp::pio::{InterruptHandler, Pio};
 use embassy_time::{Delay, Duration, Timer};
 use static_cell::make_static;
@@ -26,13 +26,7 @@ bind_interrupts!(struct Irqs {
 });
 
 #[embassy_executor::task]
-async fn wifi_task(
-    runner: cyw43::Runner<
-        'static,
-        Output<'static, PIN_23>,
-        PioSpi<'static, PIN_25, PIO0, 0, DMA_CH0>,
-    >,
-) -> ! {
+async fn wifi_task(runner: cyw43::Runner<'static, Output<'static>, PioSpi<'static, PIO0, 0, DMA_CH0>>) -> ! {
     runner.run().await
 }
 
@@ -69,7 +63,8 @@ async fn main(spawner: Spawner) {
         .await;
 
     let mut bmp390 = BMP390::new_primary(i2c_bus);
-    bmp390.init(&mut Delay, None).unwrap();
+    let bmp390id = bmp390.init(&mut Delay, None).unwrap();
+    info!("Chip ID and Rev is ID: {:x}, Rev: {:x}", bmp390id.chip_id, bmp390id.rev_id);
 
     let delay = Duration::from_secs(25);
     loop {
@@ -83,7 +78,7 @@ async fn main(spawner: Spawner) {
 
         control.gpio_set(0, false).await;
         let measurement = bmp390.take_measurement().unwrap();
-        println!("Temp {}, Press {}", measurement.temp, measurement.press);
+        info!("Temp {}, Press {}", measurement.temp, measurement.press);
         Timer::after(delay).await;
     }
 }
